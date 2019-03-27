@@ -1,0 +1,125 @@
+Pre-requisites:
+
+ 
+
+1)     ESXi installer ISO image downloaded from the VMware Web site
+
+(Already downloaded and placed here):
+
+[root@phx-bdcadm-01 ~]# /root/ESXiv5.5-build_4348813/ VMware-VMvisor-Installer-5.5.0.update03-4345813.x86_64-Dell_Customized-A08.iso )
+
+2)     Linux machine with TFTP Server, XNIETD, DHCP services installed
+
+We will be using he phx-bdcadm-01 as our server machine.
+
+## yum -y update
+## yum -y install dhcp tftp-server syslinux xinetd
+
+## yum list installed |grep -e  tftp-server -e syslinux -e xinetd                  
+
+3)     Install syslinux 
+yum -y install syslinux
+
+4)     Installation script, the kickstart file.
+
+[root@phx-bdcadm-01 ~]# cat /var/ftp/pub/ks_pxe.cfg
+
+ 
+
+Step 1: Configure DHCP
+
+Modify dhcp.conf file to enter the range of the IP Address to be used for the new hosts.
+
+We will be using fixed IP Address for each hosts by mapping their Ethernet Card MAC address to a single IP fixed IP Address.
+
+dhcp.conf file will look like the screenshot below.
+
+## cat /etc/dhcp/dhcpd.conf
+
+                     
+
+
+
+
+(For reference you can view the default dhcpd.conf.example file
+
+## cat /usr/share/doc/dhcp-4.2.5/dhcpd.conf.example
+
+Once the dhcp.cong file is configured start the service
+
+#systemctl start dhcpd
+
+Now when the host boots up it should pick the IP address associated with its MAC address.
+
+Step 2: Enable TFTP service 
+
+Locate /etc/xinetd.d/tftp and set “disable = no"
+
+#vim /etc/xinetd.d/tftp
+
+              
+
+Restart the xinetd service once changes are applied:
+## systemctl restart xinetd
+
+Step 3: Install SysLinux - Setup TFPT Directories
+
+## yum -y install syslinux
+
+Create tftpboot directories :
+
+## mkdir /var/lib/tftpboot/pxelinux.cfg
+
+## mkdir -p /var/lib/tftpboot/images/ESXiv5.5
+
+Step 4: Copy VMware ESXi ISO and ks.cfg file to TFTP location.
+
+## mkdir /mnt/iso
+
+## mount -o loop VMware-VMvisor-Installer-5.5.0.update03-4345813.x86_64-Dell_Customized-A08.iso /mnt/iso/
+
+## cd /mnt/iso/
+
+## cp -rf /mnt/iso/* /var/lib/tftpboot/images/ESXiv5.5/
+
+## cd /var/lib/tftpboot/images/ESXiv5.5/
+
+## umount /mnt/iso/
+
+Copy ks.cfg file
+
+## vim /var/lib/tftpboot/images/ESXiv5.5/boot.cfg
+
+Add ks.cfg file path to kernelopt
+
+kernelopt=ks=ftp://192.168.59.179/pub/ks_pxe.cfg
+
+Edit cd /var/lib/tftpboot/images/ESXiv5.5/ - remove unwanted “/“ character
+
+cd /var/lib/tftpboot/images/ESXiv5.5/
+
+cat boot.cfg
+
+sed -i 's/\///g' boot.cfg
+
+
+
+Step 5 - Prepare Boot Files
+
+Copy pxelinux.0 to the /tftpboot folder
+# you can find the pxelinux.0 file using find command
+find / -iname pxelinux.0
+# copy file to /tftpboot folder
+cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/
+# copy the menu.c32 file into the /var/lib/tftpboot/
+cp /usr/share/syslinux/menu.c32 /var/lib/tftpboot/images/ESXiv5.5/
+
+
+
+Step 7 - Create PXELinux configuration file
+
+Create PXELINUX configuration file save it as default.
+
+Under /var/lib/tftpboo/pxelinux.cfg/ save content below to file named default
+
+ 
