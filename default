@@ -1,0 +1,19 @@
+PAth - /var/lib/tftpboot/pxelinux.cfg
+
+DEFAULT menu.c32
+PROMPT 0
+TIMEOUT 40
+MENU TITLE BDC ESXi AUTOINSTALL BOOT MENU
+LABEL ESXiv5.5
+        MENU LABEL ESXiv5.5U2
+        KERNEL images/ESXiv5.5/mboot.c32
+        APPEND -c images/ESXiv5.5/boot.cfg
+LABEL ESXiv6.5
+        MENU LABEL ESXiv6.5U2
+        KERNEL images/ESXiv6.5U2/iso/mboot.c32
+        APPEND -c /images/ESXiv6.5U2/iso/boot.cfg
+LABEL Local
+        MENU LABEL Boot from ^local drive
+        LOCALBOOT 0xffffi
+        menu default
+MENU LABEL ^Boot from local disk
